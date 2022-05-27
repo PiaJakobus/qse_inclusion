@@ -8,7 +8,7 @@ implicit none
 integer, parameter :: n = 50 ! guesses for T
 integer :: i,j
 real    :: ye,den, p, temp, eden, eden_int, enbyrst, x_cl
-real(kind=8), dimension(100) ::  x
+real(kind=8), dimension(5371) ::  x
 real    :: delta_eden, eps, eden_int_old, eden_0
 
 eps = 0.1
