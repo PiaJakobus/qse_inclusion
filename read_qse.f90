@@ -151,13 +151,13 @@ x14 = f22(i_ye,i_cl+1)   ! 1101
 x15 = f21(i_ye+1,i_cl+1) ! 1011
 x16 = f12(i_ye+1,i_cl+1) ! 0111
 ! 12 weights:
-w10 = (rrange(i) - r) / (rrange(i+1) - rrange(i))
+w10 = (rrange(i+1) - r) / (rrange(i+1) - rrange(i))
 w21 = 1. - w10
-w20 = (trange(i) - t) / (trange(i+1) - trange(i))
+w20 = (trange(i+1) - t) / (trange(i+1) - trange(i))
 w21 = 1. - w20
-w30 = (yrange(i) - yel) / (yrange(i+1) - yrange(i))
+w30 = (yrange(i+1) - yel) / (yrange(i+1) - yrange(i))
 w31 = 1. - w30
-w40 = (srange(i) - cl) / (srange(i+1) - srange(i))
+w40 = (srange(i+1) - cl) / (srange(i+1) - srange(i))
 w41 = 1. - w40
 
 x_inter
