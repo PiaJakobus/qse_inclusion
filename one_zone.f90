@@ -7,9 +7,9 @@ implicit none
 
 integer, parameter :: n = 50 ! guesses for T
 integer :: i,j
-real    :: ye,den, p, temp, eden, eden_int, enbyrst, x_cl
+real(kind=8)   :: ye,den, p, temp, eden, eden_int, enbyrst, x_cl
 real(kind=8), dimension(5371) ::  x
-real    :: delta_eden, eps, eden_int_old, eden_0
+real(kind=8)   :: delta_eden, eps, eden_int_old, eden_0
 
 eps = 0.1
 enbyrst = 1.
@@ -46,9 +46,9 @@ enddo
 contains
 subroutine eos(rho,eden,ye,p,T)
       implicit none
-      real, intent(in) :: rho, eden, ye
-      real, intent(inout) :: T
-      real, intent(out) :: p
+      real(kind=8), intent(in) :: rho, eden, ye
+      real(kind=8), intent(inout) :: T
+      real(kind=8), intent(out) :: p
       T = 1.01 * T
       p = 100. + T
 
@@ -56,7 +56,7 @@ end subroutine eos
 
 subroutine hydro(den,eden,ye,x_cl)
       implicit none
-      real, intent(inout) :: den, eden,ye,x_cl
+      real(kind=8), intent(inout) :: den, eden,ye,x_cl
       den     = 10.**i + 10.
       eden    = 10.**i + 10.
       ye      = i + 1
