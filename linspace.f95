@@ -1,4 +1,5 @@
-! Taken from https://gist.github.com/ivan-pi/f4b4741d7ed54ceff787c85d6ba22a5a
+!  I used a  linspace module from:
+!  https://gist.github.com/ivan-pi/f4b4741d7ed54ceff787c85d6ba22a5a
 module linspace_mod
     use iso_fortran_env, only: dp => real64
     implicit none
