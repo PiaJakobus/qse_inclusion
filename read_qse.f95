@@ -101,8 +101,79 @@ subroutine qse(rho,temp,ye,x,x_cl,enbyrst)
       real(kind=8), intent(inout) :: x(5371)
       real(kind=8)                :: y(5371,75,1,1,75)
       character(len=60) :: path
-      call interpolate4D(1.3e8_dp,4.95e9_dp,0.471_dp,-1.6_dp,2,x)
+      !call interpolate4D(1.3e8_dp,4.1e9_dp,0.471_dp,-1.6_dp,2,x)
+      call interpolate4D(1.e8_dp,5.e9_dp,0.5_dp,-1.5_dp,2,x)
+      !call interpolate4D(1.e9_dp,3.e9_dp,0.47_dp,-4._dp,2,x)
 end subroutine qse
+
+
+
+subroutine find_index(rho,rrange,i_r,tem,trange,i_t,ye,yrange,i_ye,cl,srange,i_cl)
+  implicit none
+  real(kind=8), intent(in) :: yrange(75), rrange(64),trange(75),srange(75)
+  real(kind=8), intent(in) :: rho,tem,ye,cl
+  real(kind=8)           :: drho,dcl,dtem,dye
+  integer, intent(inout) :: i_r,i_t,i_ye,i_cl
+  drho   = rrange(2) - rrange(1)
+  dcl    = abs(srange(2)) - abs(srange(1))
+  dtem   = trange(1) - trange(2)
+  dye    = yrange(1) - yrange(2)
+
+  i_r  = floor((rho - rrange(1)) / drho + 1.) + 1
+  i_cl = floor((abs(cl) -  abs(srange(1))) / dcl + 1.) + 1
+  i_t =  floor((trange(1) - tem) / dtem + 1.) + 1
+  i_ye = floor((yrange(1) - ye) / dye + 1.) + 1
+
+  if (rho == rrange(1)) then
+      i_r = 1
+  end if
+  if (cl == srange(1)) then
+      i_cl = 1
+  end if
+  if (tem == trange(1)) then
+      i_t = 1
+  end if
+  if (ye == yrange(1)) then
+      i_ye = 1
+  end if
+  if (rho == rrange(size(rrange))) then
+      i_r = 64
+  end if
+  if (cl == srange(size(srange))) then
+      i_cl = 75
+  end if
+  if (tem == trange(size(trange))) then
+      i_t = 75
+  end if
+  if (ye == yrange(size(yrange))) then
+      i_ye = 75
+  end if
+  print*,'---'
+  print*, "rrange(i_r-1)",rrange(i_r-1)
+  print*, "rrange(i_r)",rrange(i_r)
+  print*, "rho",rho
+  print*, "i_r", i_r
+  print*,'---'
+
+  print*, "srange(i_cl-1)",srange(i_cl-1)
+  print*, "srange(i_cl)",srange(i_cl)
+  print*, "cl",cl
+  print*, "i_cl", i_cl
+  print*,'---'
+
+  print*, "trange(i_t-1)",trange(i_t-1)
+  print*, "trange(i_t)",trange(i_t)
+  print*, "tem",tem
+  print*, "i_t", i_t
+  print*,'---'
+
+  print*, "yrange(i_ye-1)",yrange(i_ye-1)
+  print*, "yrange(i_ye)",yrange(i_ye)
+  print*, "ye",ye
+  print*, "i_ye", i_ye
+  print*,'---'
+  stop
+end subroutine find_index
 
 ! r2/t2: 1.2857142857142857e8 / 4.972972972972973e9
 ! r2/t3: 1.2857142857142857e8 / 4.945945945945947e9
@@ -120,7 +191,7 @@ subroutine interpolate4D(rho,tem,ye,cl,index_part,x_inter)
   ! length 5371.
       implicit none
       real(kind=8), intent(in)  :: rho,tem,ye,cl
-      integer, intent(in)       ::  index_part
+      integer, intent(in)       :: index_part
       real(kind=8), intent(out) :: x_inter(5371)
       real(kind=8)              :: yrange(75), rrange(64),trange(75),srange(75)
       real(kind=8)              :: fl11(5371,75,1,1,75)
@@ -128,52 +199,35 @@ subroutine interpolate4D(rho,tem,ye,cl,index_part,x_inter)
       real(kind=8)              :: fl21(5371,75,1,1,75)
       real(kind=8)              :: fl22(5371,75,1,1,75)
       real(kind=8)              :: mass = 0., mass1 = 0.
-      integer                   :: i_r,r,i_t,i_ye,i_cl, j
+      integer                   :: i_r,i_t,i_ye,i_cl, j
       real(kind=8)              :: x0000,x1111,x1000,x0100,&
                                    x0010,x0001,x1100,x0011,&
                                    x1010,x0101,x0110,x1001,&
                                    x1110,x1101,x1011,x0111
       real(kind=8)              :: w10,w20,w30,w40,&
-                                   w11,w21,w31,w41
+                                   w11,w21,w31,w41,&
+                                   drho,dcl,dtem,dye
       character(len=60)         :: path1,path2,path3,path4,tmp1,tmp2
 
       rrange = linspace(1e8_dp,1e9_dp,64)
       trange = linspace(5e9_dp,3e9_dp,75)
       yrange = linspace(0.5_dp,0.47_dp,75)
       srange = linspace(-1.5_dp,-4._dp,75)
+      drho   = rrange(2) - rrange(1)
+      dcl    = abs(srange(2)) - abs(srange(1))
+      dtem   = trange(1) - trange(2)
+      dye    = yrange(1) - yrange(2)
       ! I could also call the parameter space direclty. But maybe not in this routine:
       !call range_params(yrange, "/yrange")
       !call range_params(srange, "/srange")
-      i_r = MINLOC(rrange, dim=1,mask=(rho < rrange))
-      print*,'---'
-      print*, "rrange(i_r-1)",rrange(i_r-1)
-      print*, "rrange(i_r)",rrange(i_r)
-      print*, "rho",rho
-      print*, "i_r", i_r
-      print*,'---'
-      i_cl = MINLOC(abs(srange), dim=1,mask=(abs(cl) < abs(srange)))
-      print*, "srange(i_cl-1)",srange(i_cl-1)
-      print*, "srange(i_cl)",srange(i_cl)
-      print*, "cl",cl
-      print*, "i_cl", i_cl
-      print*,'---'
-      i_t = MINLOC(trange, dim=1,mask=(tem < trange))
-      print*, "trange(i_t+1)",trange(i_t+1)
-      print*, "trange(i_t)",trange(i_t)
-      print*, "tem",tem
-      print*, "i_t", i_t
-      print*,'---'
-      i_ye = MINLOC(yrange, dim=1,mask=(ye < yrange))
-      print*, "yrange(i_ye+1)",yrange(i_ye+1)
-      print*, "yrange(i_ye)",yrange(i_ye)
-      print*, "ye",ye
-      print*, "i_ye", i_ye
-      print*,'---'
+
 
       ! i_r = 1
       ! i_t = 1
       ! i_cl = 10
       ! i_ye = 10
+      call find_index(rho,rrange,i_r,tem,trange,i_t,ye,yrange,i_ye,cl,srange,i_cl)
+
       i_r = i_r - 1 ! directories for rho start at zero
       write(tmp1,'(a,i0,a)') 'r',i_r-1
       write(tmp2,'(a,i0,a)') '/t',i_t
@@ -195,53 +249,88 @@ subroutine interpolate4D(rho,tem,ye,cl,index_part,x_inter)
       call data_qse(fl22,path4)
 
       ! ***** calculating weights *****
-      ! see example in  https://en.wikipedia.org/wiki/Linear_interpolation
-      ! rrange,srange have ascening order: rrange(i_r-1) < rho < rrange(i_r)
-      ! w10: dimension 1 at index i
-      ! w11: dimension 1 at index i+1
-      w10 = (rrange(i_r) - rho) / (rrange(i_r) - rrange(i_r-1))
+      ! https://en.wikipedia.org/wiki/Linear_interpolation
+      w10 = (rrange(i_r) - rho) / drho
       w11 = 1. - w10
-      ! w40: dimension 4 at index i
-      ! w41: dimension 4 at index i+1
-      w40 = (srange(i_cl) - cl) / (srange(i_cl) - srange(i_cl-1))
+      w40 = (srange(i_cl) - cl) / dcl
       w41 = 1. - w40
-      !
-      ! trange,yrange have descending order: trange(i_t) > tem > trange(i_t+1)
-      ! w21: dimension 2 at index i (the sign doesn't matter, only ratio)
-      ! w20: dimension 2 at index i+1
-      w21 = (trange(i_t) - tem) / (trange(i_t) - trange(i_t+1))
-      w20 = 1. - w21
-      ! w30: dimension 2 at index i (the sign doesn't matter, only ratio)
-      ! w31: dimension 2 at index i+1
-      w31 = (yrange(i_ye) - ye) / (yrange(i_ye) - yrange(i_ye+1))
-      w30 = 1. - w31
+      w20 = (- trange(i_t) + tem) / dtem
+      w21 = 1. - w20
+      w30 = (- yrange(i_ye) + ye) / dye
+      w31 = 1. - w30
       print*, w10,w20,w30,w40,w11,w21,w31,w41
-      ! **********
 
+      ! ***** checking for corner cases *****
+      if ((i_ye == 1) .and. (i_cl == 1)) then
+        x0011 = fl11(j,i_ye,1,1,i_cl)
+        x0111 = fl12(j,i_ye,1,1,i_cl)
+        x1011 = fl21(j,i_ye,1,1,i_cl)
+        x1111 = fl22(j,i_ye,1,1,i_cl)
+        x_inter(j) = w10 * (x0011 * w20 + x0111 * w21) + &
+                     w11 * (x1011 * w20 + x1111 * w21)
+        return
+      else if (i_ye == 1) then
+        x0010 = fl11(j,i_ye,1,1,i_cl-1)
+        x0011 = fl11(j,i_ye,1,1,i_cl)
+        x0110 = fl12(j,i_ye,1,1,i_cl-1)
+        x0111 = fl12(j,i_ye,1,1,i_cl)
+        x1010 = fl21(j,i_ye,1,1,i_cl-1)
+        x1011 = fl21(j,i_ye,1,1,i_cl)
+        x1111 = fl22(j,i_ye,1,1,i_cl)
+        x1110 = fl22(j,i_ye,1,1,i_cl-1)
+        x_inter(j) = w10 * ( &
+                     x0010 * (w20 * w40) + &
+                     x0011 * (w20 * w41) + &
+                     x0110 * (w21 * w40) + &
+                     x0111 * (w21 * w41)) + &
+                     w11 * ( &
+                     x1010 * (w20 * w40) + &
+                     x1011 * (w20 * w41) + &
+                     x1111 * (w21 * w41) + &
+                     x1110 * (w21 * w40))
+        return
+      else if (i_cl == 1) then
+        x0001 = fl11(j,i_ye-1,1,1,i_cl)
+        x0011 = fl11(j,i_ye,1,1,i_cl)
+        x0101 = fl12(j,i_ye-1,1,1,i_cl)
+        x0111 = fl12(j,i_ye,1,1,i_cl)
+        x1001 = fl21(j,i_ye-1,1,1,i_cl)
+        x1011 = fl21(j,i_ye,1,1,i_cl)
+        x1111 = fl22(j,i_ye,1,1,i_cl)
+        x1101 = fl22(j,i_ye-1,1,1,i_cl)
+        x_inter(j) = w10 * ( &
+                     x0001 * (w20 * w30) + &
+                     x0011 * (w20 * w31) + &
+                     x0101 * (w21 * w30) + &
+                     x0111 * (w21 * w31)) + &
+                     w11 * ( &
+                     x1001 * (w20 * w30) + &
+                     x1011 * (w20 * w31) + &
+                     x1111 * (w21 * w31) + &
+                     x1101 * (w21 * w30))
+        return
+      end if
 
+      ! ***** looping over entire array *****
       do j = 1, size(x_inter)
-        !(size(yrange, 1), size(trange, 1), size(rrange, 1), size(srange, 1))
-
-
-            x0000 = fl11(j,i_ye,1,1,i_cl)
-            x0010 = fl11(j,i_ye+1,1,1,i_cl)
-            x0001 = fl11(j,i_ye,1,1,i_cl+1)
-            x0011 = fl11(j,i_ye+1,1,1,i_cl+1)
-
-            x0100 = fl12(j,i_ye,1,1,i_cl)
-            x0101 = fl12(j,i_ye,1,1,i_cl+1)
-            x0110 = fl12(j,i_ye+1,1,1,i_cl)
-            x0111 = fl12(j,i_ye+1,1,1,i_cl+1)
-
-            x1000 = fl21(j,i_ye,1,1,i_cl)
-            x1010 = fl21(j,i_ye+1,1,1,i_cl)
-            x1001 = fl21(j,i_ye,1,1,i_cl+1)
-            x1011 = fl21(j,i_ye+1,1,1,i_cl+1)
-
-            x1111 = fl22(j,i_ye+1,1,1,i_cl+1)
-            x1100 = fl22(j,i_ye,1,1,i_cl)
-            x1110 = fl22(j,i_ye+1,1,1,i_cl)
-            x1101 = fl22(j,i_ye,1,1,i_cl+1)
+            ! Julia: fl__ -> ye, t, rho, s
+            ! x____ -> rho,tem,ye,cl
+            x0000 = fl11(j,i_ye-1,1,1,i_cl-1)
+            x0010 = fl11(j,i_ye,1,1,i_cl-1)
+            x0001 = fl11(j,i_ye-1,1,1,i_cl)
+            x0011 = fl11(j,i_ye,1,1,i_cl)
+            x0100 = fl12(j,i_ye-1,1,1,i_cl-1)
+            x0101 = fl12(j,i_ye-1,1,1,i_cl)
+            x0110 = fl12(j,i_ye,1,1,i_cl-1)
+            x0111 = fl12(j,i_ye,1,1,i_cl)
+            x1000 = fl21(j,i_ye-1,1,1,i_cl-1)
+            x1010 = fl21(j,i_ye,1,1,i_cl-1)
+            x1001 = fl21(j,i_ye-1,1,1,i_cl)
+            x1011 = fl21(j,i_ye,1,1,i_cl)
+            x1111 = fl22(j,i_ye,1,1,i_cl)
+            x1100 = fl22(j,i_ye-1,1,1,i_cl-1)
+            x1110 = fl22(j,i_ye,1,1,i_cl-1)
+            x1101 = fl22(j,i_ye-1,1,1,i_cl)
 
 
 ! =================================================
@@ -251,43 +340,40 @@ subroutine interpolate4D(rho,tem,ye,cl,index_part,x_inter)
 ! TODO: fix binary search -> DONE
 ! TODO: run on harddrive -> DONE
 ! TODO: write tests -> DONE
+! TODO: write if clauses for edges
 ! TODO: one_zone.f95
 ! =================================================
 
 
-      ! each direction is multiplied with weights
-      ! Example for 1D interpolation:
-      !         x0000: value of x,y,z,h at (i_x,i_y,i_z,i_h) - 1
-      !       * w10:   (x_i - x) / (x_i - x_i-1)
-      !       + w11    (x - x_i-1) / (x_i - x_i-1)
-      !       * x1000: value of x,y,z,h at i_x,(i_y,i_z,i_h) - 1)
-      x_inter(j) = x0000 * (w10 * w20 * w30 * w40) + &
-                   x0010 * (w10 * w20 * w31 * w40) + &
-                   x0001 * (w10 * w20 * w30 * w41) + &
-                   x0011 * (w10 * w20 * w31 * w41) + &
-                   x0100 * (w10 * w21 * w30 * w40) + &
-                   x0101 * (w10 * w21 * w30 * w41) + &
-                   x0110 * (w10 * w21 * w31 * w40) + &
-                   x0111 * (w10 * w21 * w31 * w41) + &
-                   x1000 * (w11 * w20 * w30 * w40) + &
-                   x1010 * (w11 * w20 * w31 * w40) + &
-                   x1001 * (w11 * w20 * w30 * w41) + &
-                   x1011 * (w11 * w20 * w31 * w41) + &
-                   x1111 * (w11 * w21 * w31 * w41) + &
-                   x1100 * (w11 * w21 * w30 * w40) + &
-                   x1110 * (w11 * w21 * w31 * w40) + &
-                   x1101 * (w11 * w21 * w30 * w41)
-            print*,'x1111    ',x1111, "x_inter  ",x_inter(j)
-
+      x_inter(j) = w10 * ( &
+                   x0000 * (w20 * w30 * w40) + &
+                   x0010 * (w20 * w31 * w40) + &
+                   x0001 * (w20 * w30 * w41) + &
+                   x0011 * (w20 * w31 * w41) + &
+                   x0100 * (w21 * w30 * w40) + &
+                   x0101 * (w21 * w30 * w41) + &
+                   x0110 * (w21 * w31 * w40) + &
+                   x0111 * (w21 * w31 * w41)) + &
+                   w11 * ( &
+                   x1000 * (w20 * w30 * w40) + &
+                   x1010 * (w20 * w31 * w40) + &
+                   x1001 * (w20 * w30 * w41) + &
+                   x1011 * (w20 * w31 * w41) + &
+                   x1111 * (w21 * w31 * w41) + &
+                   x1100 * (w21 * w30 * w40) + &
+                   x1110 * (w21 * w31 * w40) + &
+                   x1101 * (w21 * w30 * w41))
+            if (x_inter(j) > 1.e-6_dp) then
+              print*, 100._dp*abs(1.0-x1111/x_inter(j)),x1111,x_inter(j)
+            end if
         if (x_inter(j) .ne. x_inter(j)) then
           x_inter(j) = 0
         else
           mass = mass + x_inter(j)
           mass1 = mass1 + x1111
         endif
-        !print*, x_inter(j), x0000, x0100, x1000, x1111
       end do
-        print*,"--------------", mass, mass1, i_ye, i_cl,path4
+        print*,"--------------", mass, mass1, abs(1._dp-mass/mass1)
 
       end subroutine interpolate4D
 
