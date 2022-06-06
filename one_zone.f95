@@ -20,8 +20,8 @@ call eos(den,eden-enbyrst,ye,p,temp)
 
 
 ! what if T falls behind T_qse in iteration?
-
-
+! kepdata.py in python/source (kepler) approx21
+! 1) mapping all nuclei -> 21 nuclei
 
 ! --------- check via eden --------
 delta_eden = 100.

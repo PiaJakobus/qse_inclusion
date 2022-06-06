@@ -101,8 +101,14 @@ subroutine qse(rho,temp,ye,x,x_cl,enbyrst)
       real(kind=8), intent(inout) :: x(5371)
       real(kind=8)                :: y(5371,75,1,1,75)
       character(len=60) :: path
-      !call interpolate4D(1.3e8_dp,4.1e9_dp,0.471_dp,-1.6_dp,2,x)
-      call interpolate4D(1.e8_dp,5.e9_dp,0.5_dp,-1.5_dp,2,x)
+      ! r2/t2: 1.2857142857142857e8 / 4.972972972972973e9
+      ! r2/t3: 1.2857142857142857e8 / 4.945945945945947e9
+      ! r3/t2: 1.4285714285714287e8 / 4.972972972972973e9
+      ! r3/t3: 1.4285714285714287e8 / 4.945945945945947e9
+
+      !call interpolate4D(4.e8_dp,3.1e9_dp,0.49_dp,-0.6_dp,2,x)
+      call interpolate4D(1.3e8_dp,4.95e9_dp,0.471_dp,-1.6_dp,2,x)
+      !call interpolate4D(1.e8_dp,5.e9_dp,0.5_dp,-1.5_dp,2,x)
       !call interpolate4D(1.e9_dp,3.e9_dp,0.47_dp,-4._dp,2,x)
 end subroutine qse
 
@@ -172,13 +178,24 @@ subroutine find_index(rho,rrange,i_r,tem,trange,i_t,ye,yrange,i_ye,cl,srange,i_c
   print*, "ye",ye
   print*, "i_ye", i_ye
   print*,'---'
-  stop
+  !stop
 end subroutine find_index
 
-! r2/t2: 1.2857142857142857e8 / 4.972972972972973e9
-! r2/t3: 1.2857142857142857e8 / 4.945945945945947e9
-! r3/t2: 1.4285714285714287e8 / 4.972972972972973e9
-! r3/t3: 1.4285714285714287e8 / 4.945945945945947e9
+
+subroutine inject(fl,f_red)
+  real(kind=8), intent(in) :: fl(5371,75,1,1,75)
+  real(kind=8), intent(inout):: f_red(20,75,75)
+  integer      :: i,j
+  f_red = fl((/1,2,3,5,6,7,8,31,84,145,215,292,376,465,560,659,661,763,518,769/),1:75,1,1,1:75)
+  do j = 1, 75
+    do i = 1,75
+      f_red(:,i,j) = f_red(:,i,j)/sum(f_red(:,i,j))
+    end do
+  end do
+  !stop
+end subroutine inject
+
+
 subroutine interpolate4D(rho,tem,ye,cl,index_part,x_inter)
   ! f11: rho(i_r),T(i_t)
   ! f12: rho(i_r), T(i_t+1)
@@ -198,6 +215,7 @@ subroutine interpolate4D(rho,tem,ye,cl,index_part,x_inter)
       real(kind=8)              :: fl12(5371,75,1,1,75)
       real(kind=8)              :: fl21(5371,75,1,1,75)
       real(kind=8)              :: fl22(5371,75,1,1,75)
+      real(kind=8)              :: f_red(20,75,1,1,75)
       real(kind=8)              :: mass = 0., mass1 = 0.
       integer                   :: i_r,i_t,i_ye,i_cl, j
       real(kind=8)              :: x0000,x1111,x1000,x0100,&
@@ -230,23 +248,35 @@ subroutine interpolate4D(rho,tem,ye,cl,index_part,x_inter)
 
       i_r = i_r - 1 ! directories for rho start at zero
       write(tmp1,'(a,i0,a)') 'r',i_r-1
-      write(tmp2,'(a,i0,a)') '/t',i_t
+      write(tmp2,'(a,i0,a)') '/t',i_t-1
       path1 = "qse_table/"//trim(tmp1) // trim(tmp2) // "/QSE_table.jld"
       write(tmp1,'(a,i0,a)') 'r',i_r-1
-      write(tmp2,'(a,i0,a)') '/t',i_t+1
+      write(tmp2,'(a,i0,a)') '/t',i_t
       path2 = "qse_table/"//trim(tmp1) // trim(tmp2) // "/QSE_table.jld"
       write(tmp1,'(a,i0,a)') 'r',i_r
-      write(tmp2,'(a,i0,a)') '/t',i_t
+      write(tmp2,'(a,i0,a)') '/t',i_t-1
       path3 = "qse_table/"//trim(tmp1) // trim(tmp2) // "/QSE_table.jld"
       write(tmp1,'(a,i0,a)') 'r',i_r
-      write(tmp2,'(a,i0,a)') '/t',i_t+1
+      write(tmp2,'(a,i0,a)') '/t',i_t
       path4 = "qse_table/"//trim(tmp1) // trim(tmp2) // "/QSE_table.jld"
       i_r = i_r + 1
+
+
+
+
 
       call data_qse(fl11,path1)
       call data_qse(fl12,path2)
       call data_qse(fl21,path3)
       call data_qse(fl22,path4)
+
+      call inject(fl11,f_red)
+      call inject(fl12,f_red)
+      call inject(fl21,f_red)
+      call inject(fl22,f_red)
+      stop
+
+
 
       ! ***** calculating weights *****
       ! https://en.wikipedia.org/wiki/Linear_interpolation
@@ -340,7 +370,7 @@ subroutine interpolate4D(rho,tem,ye,cl,index_part,x_inter)
 ! TODO: fix binary search -> DONE
 ! TODO: run on harddrive -> DONE
 ! TODO: write tests -> DONE
-! TODO: write if clauses for edges
+! TODO: write if clauses for edges -> DONE
 ! TODO: one_zone.f95
 ! =================================================
 
