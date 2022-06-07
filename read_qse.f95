@@ -14,7 +14,7 @@ subroutine data_qse(y,filename)
   ! add path to filename
   implicit none
 
-  real(kind=8), intent(inout)      :: y(75,1,1,75,5371)
+  real(kind=8), intent(inout)      :: y(5371,75,1,1,75)
   character(len=60), intent(in)    :: filename
   integer, parameter               :: ydims = 5
   integer(HID_T)                   :: yshape(ydims)
@@ -207,25 +207,26 @@ subroutine inject_to_file(f_red,rrange,trange,yrange,srange)
   open(unit=90,file="out.dat",status='replace')
   write(90,2001) "temp","rho","Y_e","log X_cl", "X_i"
   2001 format (5A10)
-  do rr = 1, 64
-    do tt = 1,75
+  do rr = 1, 1
+    do tt = 1,1
       write(tmp1,'(A1,i0,A1)') 'r',rr-1
       write(tmp2,'(A2,i0,A1)') '/t',tt
       print*, tmp1, tmp2
       path = "../output/"//trim(tmp1)//trim(tmp2)//"/QSE_table.jld"
-      print*,"*** path ***", path
+      print*,"*** path ***  : ", path
       call data_qse(fl,path)
       print*, "======"
       f_red = fl((/1,2,3,5,6,7,8,31,84,145,215,292,376,465,560,659,661,763,518,769/),1:75,1,1,1:75)
-      do i = 2,75
-        do j = 1,75
+      do j = 2,75
+        do i = 1,75
           write(90,2000) trange(tt),rrange(rr),yrange(i), srange(j),f_red(:,i,j)/sum(f_red(:,i,j))
         end do
       end do
-      stop
+      !stop
     end do
   end do
-  2000 format (24(D15.4))
+  2000 format (25(D15.5))
+  !2000 format (25(F5.3))
   close(90)
 end subroutine inject_to_file
 
@@ -307,7 +308,7 @@ subroutine interpolate4D(rho,tem,ye,cl,index_part,x_inter)
       call inject(fl12,f_red,rrange,trange,yrange,srange)
       call inject(fl21,f_red,rrange,trange,yrange,srange)
       call inject(fl22,f_red,rrange,trange,yrange,srange)
-      stop
+      !stop
 
 
 
