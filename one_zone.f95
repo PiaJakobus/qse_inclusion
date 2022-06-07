@@ -9,7 +9,7 @@ integer, parameter :: n = 50 ! guesses for T
 integer :: i,j
 real(kind=8)   :: ye,den, p, temp, eden, eden_int, enbyrst, x_cl
 real(kind=8), dimension(5371) ::  x
-real(kind=8)   :: delta_eden, eps, eden_int_old, eden_0
+real(kind=8)   :: delta_eden_int, eps, eden_int_old, eden_0
 
 eps = 0.1
 enbyrst = 1.
@@ -24,16 +24,16 @@ call eos(den,eden-enbyrst,ye,p,temp)
 ! 1) mapping all nuclei -> 21 nuclei
 
 ! --------- check via eden --------
-delta_eden = 100.
+delta_eden_int = 100.
 j = 1
 eden_int = eden_0 - enbyrst
 eden_int_old = eden_int
 
-do while ((delta_eden > 0.01) .and. (j < 10))
+do while ((delta_eden_int > 0.01) .and. (j < 10))
       call eos(den,eden_int,ye,p,temp)
       call qse(den,temp,ye,x,x_cl,enbyrst)
       eden_int = eden_0 - enbyrst
-      delta_eden = abs(eden_int - eden_int_old)
+      delta_eden_int = abs(eden_int - eden_int_old)
       eden_int_old = eden_int
       j = j + 1
 enddo
