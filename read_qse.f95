@@ -204,27 +204,24 @@ subroutine inject_to_file(f_red,rrange,trange,yrange,srange)
   character(len=100)         :: path
   character(len=10)       :: tmp1,tmp2
 
-  open(unit=90,file="out.dat",status='replace',form='unformatted')
-  ! write(90,2001) "temp","rho","Y_e","log X_cl", "X_i"
-  ! 2001 format (5A10)
-  ! Julia: fl__ -> ye, t, rho, s
+  open(unit=90,file="/c/pia/qse_inject.dat",status='replace',form='unformatted')
+  write(90) trange,rrange,yrange, srange
   do rr = 1, 64
-    do tt = 1,75
+    do tt = 1,62
       write(tmp1,'(A1,i0)') 'r',rr-1
       write(tmp2,'(A2,i0)') '/t',tt
       print*, tmp1, tmp2
       path = "/c/pia/output/"//trim(tmp1)//trim(tmp2)//"/QSE_table.jld"
-      print*,"*** path ***", path
       call data_qse(fl,path)
       f_red = fl((/1,2,3,5,6,7,8,31,84,145,215,292,376,465,560,659,661,763,518,769/),1:75,1,1,1:75)
         do i = 2,75
           do j = 1,75
-            write(90) trange(tt),rrange(rr),yrange(i), srange(j),f_red(:,i,j)/sum(f_red(:,i,j))
+            write(90) tt,rr,i, j,f_red(:,i,j)/sum(f_red(:,i,j))
           end do
         end do
     end do
+    print*,"*** path ***", path
   end do
-  !2000 format (24(D15.4))
   close(90)
 end subroutine inject_to_file
 
