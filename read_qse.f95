@@ -14,7 +14,7 @@ subroutine data_qse(y,filename)
   ! add path to filename
   implicit none
 
-  real(kind=8), intent(inout)      :: y(5371,75,1,1,75)
+  real(kind=8), intent(inout)      :: y(75,1,1,75,5371)
   character(len=60), intent(in)    :: filename
   integer, parameter               :: ydims = 5
   integer(HID_T)                   :: yshape(ydims)
@@ -182,51 +182,49 @@ subroutine find_index(rho,rrange,i_r,tem,trange,i_t,ye,yrange,i_ye,cl,srange,i_c
 end subroutine find_index
 
 
-subroutine inject(fl,f_red,rrange,trange,yrange,srange)
-  real(kind=8), intent(in) :: fl(5371,75,1,1,75)
-  real(kind=8), intent(inout):: f_red(20,75,75)
-  real(kind=8),intent(in):: yrange(75), rrange(64),trange(75),srange(75)
-  integer      :: i,j
-  f_red = fl((/1,2,3,5,6,7,8,31,84,145,215,292,376,465,560,659,661,763,518,769/),1:75,1,1,1:75)
-  do j = 1, 75
-    do i = 1,75
-      f_red(:,i,j) = f_red(:,i,j)/sum(f_red(:,i,j))
-    end do
-  end do
-
-end subroutine inject
+! subroutine inject(fl,f_red,rrange,trange,yrange,srange)
+!   real(kind=8), intent(in) :: fl(5371,75,1,1,75)
+!   real(kind=8), intent(inout)::  f_red(20,75,1,75,75)
+!   real(kind=8),intent(in):: yrange(75), rrange(64),trange(75),srange(75)
+!   integer      :: i,j
+!   f_red = fl((/1,2,3,5,6,7,8,31,84,145,215,292,376,465,560,659,661,763,518,769/),1:75,1,1,1:75)
+!   do j = 1, 75
+!     do i = 1,75
+!       f_red(:,i,j) = f_red(:,i,j)/sum(f_red(:,i,j))
+!     end do
+!   end do
+!
+! end subroutine inject
 
 subroutine inject_to_file(f_red,rrange,trange,yrange,srange)
-  real(kind=8), intent(inout):: f_red(20,75,75)
+  real(kind=8), intent(inout)::  f_red(20,75,75)
   real(kind=8) :: fl(5371,75,1,1,75)
   real(kind=8),intent(in):: yrange(75), rrange(64),trange(75),srange(75)
   integer :: i, j,rr,tt
   character(len=100)         :: path
   character(len=10)       :: tmp1,tmp2
 
-  open(unit=90,file="out.dat",status='replace')
-  write(90,2001) "temp","rho","Y_e","log X_cl", "X_i"
-  2001 format (5A10)
-  do rr = 1, 1
-    do tt = 1,1
-      write(tmp1,'(A1,i0,A1)') 'r',rr-1
-      write(tmp2,'(A2,i0,A1)') '/t',tt
+  open(unit=90,file="out.dat",status='replace',form='unformatted')
+  ! write(90,2001) "temp","rho","Y_e","log X_cl", "X_i"
+  ! 2001 format (5A10)
+  ! Julia: fl__ -> ye, t, rho, s
+  do rr = 1, 64
+    do tt = 1,75
+      write(tmp1,'(A1,i0)') 'r',rr-1
+      write(tmp2,'(A2,i0)') '/t',tt
       print*, tmp1, tmp2
       path = "../output/"//trim(tmp1)//trim(tmp2)//"/QSE_table.jld"
-      print*,"*** path ***  : ", path
+      print*,"*** path ***", path
       call data_qse(fl,path)
-      print*, "======"
       f_red = fl((/1,2,3,5,6,7,8,31,84,145,215,292,376,465,560,659,661,763,518,769/),1:75,1,1,1:75)
-      do j = 2,75
-        do i = 1,75
-          write(90,2000) trange(tt),rrange(rr),yrange(i), srange(j),f_red(:,i,j)/sum(f_red(:,i,j))
+        do i = 2,75
+          do j = 1,75
+            write(90) trange(tt),rrange(rr),yrange(i), srange(j),f_red(:,i,j)/sum(f_red(:,i,j))
+          end do
         end do
-      end do
-      !stop
     end do
   end do
-  2000 format (25(D15.5))
-  !2000 format (25(F5.3))
+  !2000 format (24(D15.4))
   close(90)
 end subroutine inject_to_file
 
@@ -249,7 +247,7 @@ subroutine interpolate4D(rho,tem,ye,cl,index_part,x_inter)
       real(kind=8)              :: fl12(5371,75,1,1,75)
       real(kind=8)              :: fl21(5371,75,1,1,75)
       real(kind=8)              :: fl22(5371,75,1,1,75)
-      real(kind=8)              :: f_red(20,75,1,1,75)
+      real(kind=8)              :: f_red(20,75,75)
       real(kind=8)              :: mass = 0., mass1 = 0.
       integer                   :: i_r,i_t,i_ye,i_cl, j
       real(kind=8)              :: x0000,x1111,x1000,x0100,&
@@ -281,17 +279,17 @@ subroutine interpolate4D(rho,tem,ye,cl,index_part,x_inter)
       call find_index(rho,rrange,i_r,tem,trange,i_t,ye,yrange,i_ye,cl,srange,i_cl)
 
       i_r = i_r - 1 ! directories for rho start at zero
-      write(tmp1,'(a,i0,a)') 'r',i_r-1
-      write(tmp2,'(a,i0,a)') '/t',i_t-1
+      write(tmp1,'(a,i0)') 'r',i_r-1
+      write(tmp2,'(a,i0)') '/t',i_t-1
       path1 = "qse_table/"//trim(tmp1) // trim(tmp2) // "/QSE_table.jld"
-      write(tmp1,'(a,i0,a)') 'r',i_r-1
-      write(tmp2,'(a,i0,a)') '/t',i_t
+      write(tmp1,'(a,i0)') 'r',i_r-1
+      write(tmp2,'(a,i0)') '/t',i_t
       path2 = "qse_table/"//trim(tmp1) // trim(tmp2) // "/QSE_table.jld"
-      write(tmp1,'(a,i0,a)') 'r',i_r
-      write(tmp2,'(a,i0,a)') '/t',i_t-1
+      write(tmp1,'(a,i0)') 'r',i_r
+      write(tmp2,'(a,i0)') '/t',i_t-1
       path3 = "qse_table/"//trim(tmp1) // trim(tmp2) // "/QSE_table.jld"
-      write(tmp1,'(a,i0,a)') 'r',i_r
-      write(tmp2,'(a,i0,a)') '/t',i_t
+      write(tmp1,'(a,i0)') 'r',i_r
+      write(tmp2,'(a,i0)') '/t',i_t
       path4 = "qse_table/"//trim(tmp1) // trim(tmp2) // "/QSE_table.jld"
       i_r = i_r + 1
 
@@ -308,7 +306,7 @@ subroutine interpolate4D(rho,tem,ye,cl,index_part,x_inter)
       call inject(fl12,f_red,rrange,trange,yrange,srange)
       call inject(fl21,f_red,rrange,trange,yrange,srange)
       call inject(fl22,f_red,rrange,trange,yrange,srange)
-      !stop
+      stop
 
 
 
