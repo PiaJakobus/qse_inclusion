@@ -1,2 +1,10 @@
 a.out 
+*.mod
+*.o
+*.dat
+*.exe
+*.dek
+*.md
+*.swp
+one_zone.f95
 

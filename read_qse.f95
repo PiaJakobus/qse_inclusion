@@ -1,7 +1,7 @@
 module read_qse
 use hdf5
 use hdf5_utils
-use iso_fortran_env, only: dp => real64
+!use iso_fortran_env, only: dp => real64
 use linspace_mod
 
 
@@ -14,7 +14,7 @@ subroutine data_qse(y,filename)
   ! add path to filename
   implicit none
 
-  real(kind=8), intent(inout)      :: y(75,1,1,75,5371)
+  real(dp), intent(inout)      :: y(75,1,1,75,5371)
   character(len=60), intent(in)    :: filename
   integer, parameter               :: ydims = 5
   integer(HID_T)                   :: yshape(ydims)
@@ -57,7 +57,7 @@ subroutine range_params(yrange, dataname_y)
   ! This subroutine reads params.jld
   ! add path to filename
   ! can be called for srange as well
-  real(kind=8), intent(inout) :: yrange(75)
+  real(dp), intent(inout) :: yrange(75)
   character(len=7), intent(in) :: dataname_y
   integer, parameter          :: ydims = 1
   integer(HID_T)              :: yshape(ydims)
@@ -97,9 +97,9 @@ end subroutine range_params
 
 subroutine qse(rho,temp,ye,x,x_cl,enbyrst)
       implicit none
-      real(kind=8), intent(in)    :: rho, temp, ye, x_cl,enbyrst
-      real(kind=8), intent(inout) :: x(5371)
-      real(kind=8)                :: y(5371,75,1,1,75)
+      real(dp), intent(in)    :: rho, temp, ye, x_cl,enbyrst
+      real(dp), intent(inout) :: x(5371)
+      real(dp)                :: y(5371,75,1,1,75)
       character(len=60) :: path
       ! r2/t2: 1.2857142857142857e8 / 4.972972972972973e9
       ! r2/t3: 1.2857142857142857e8 / 4.945945945945947e9
@@ -116,9 +116,9 @@ end subroutine qse
 
 subroutine find_index(rho,rrange,i_r,tem,trange,i_t,ye,yrange,i_ye,cl,srange,i_cl)
   implicit none
-  real(kind=8), intent(in) :: yrange(75), rrange(64),trange(75),srange(75)
-  real(kind=8), intent(in) :: rho,tem,ye,cl
-  real(kind=8)           :: drho,dcl,dtem,dye
+  real(dp), intent(in) :: yrange(75), rrange(64),trange(75),srange(75)
+  real(dp), intent(in) :: rho,tem,ye,cl
+  real(dp)           :: drho,dcl,dtem,dye
   integer, intent(inout) :: i_r,i_t,i_ye,i_cl
   drho   = rrange(2) - rrange(1)
   dcl    = abs(srange(2)) - abs(srange(1))
@@ -154,75 +154,64 @@ subroutine find_index(rho,rrange,i_r,tem,trange,i_t,ye,yrange,i_ye,cl,srange,i_c
   if (ye == yrange(size(yrange))) then
       i_ye = 75
   end if
-  print*,'---'
-  print*, "rrange(i_r-1)",rrange(i_r-1)
-  print*, "rrange(i_r)",rrange(i_r)
-  print*, "rho",rho
-  print*, "i_r", i_r
-  print*,'---'
-
-  print*, "srange(i_cl-1)",srange(i_cl-1)
-  print*, "srange(i_cl)",srange(i_cl)
-  print*, "cl",cl
-  print*, "i_cl", i_cl
-  print*,'---'
-
-  print*, "trange(i_t-1)",trange(i_t-1)
-  print*, "trange(i_t)",trange(i_t)
-  print*, "tem",tem
-  print*, "i_t", i_t
-  print*,'---'
-
-  print*, "yrange(i_ye-1)",yrange(i_ye-1)
-  print*, "yrange(i_ye)",yrange(i_ye)
-  print*, "ye",ye
-  print*, "i_ye", i_ye
-  print*,'---'
-  !stop
+!  print*,'---'
+!  print*, "rrange(i_r-1)",rrange(i_r-1)
+!  print*, "rrange(i_r)",rrange(i_r)
+!  print*, "rho",rho
+!  print*, "i_r", i_r
+!  print*,'---'
+!
+!  print*, "srange(i_cl-1)",srange(i_cl-1)
+!  print*, "srange(i_cl)",srange(i_cl)
+!  print*, "cl",cl
+!  print*, "i_cl", i_cl
+!  print*,'---'
+!
+!  print*, "trange(i_t-1)",trange(i_t-1)
+!  print*, "trange(i_t)",trange(i_t)
+!  print*, "tem",tem
+!  print*, "i_t", i_t
+!  print*,'---'
+!
+!  print*, "yrange(i_ye-1)",yrange(i_ye-1)
+!  print*, "yrange(i_ye)",yrange(i_ye)
+!  print*, "ye",ye
+!  print*, "i_ye", i_ye
+!  print*,'---'
 end subroutine find_index
 
-
-! subroutine inject(fl,f_red,rrange,trange,yrange,srange)
-!   real(kind=8), intent(in) :: fl(5371,75,1,1,75)
-!   real(kind=8), intent(inout)::  f_red(20,75,1,75,75)
-!   real(kind=8),intent(in):: yrange(75), rrange(64),trange(75),srange(75)
-!   integer      :: i,j
-!   f_red = fl((/1,2,3,5,6,7,8,31,84,145,215,292,376,465,560,659,661,763,518,769/),1:75,1,1,1:75)
-!   do j = 1, 75
-!     do i = 1,75
-!       f_red(:,i,j) = f_red(:,i,j)/sum(f_red(:,i,j))
-!     end do
-!   end do
-!
-! end subroutine inject
-
 subroutine inject_to_file(f_red,rrange,trange,yrange,srange)
-  real(kind=8), intent(inout)::  f_red(20,75,75)
-  real(kind=8) :: fl(5371,75,1,1,75)
-  real(kind=8),intent(in):: yrange(75), rrange(64),trange(75),srange(75)
-  integer :: i, j,rr,tt
+  ! Julia: yy,tt,rr,ss
+  real(dp), allocatable, intent(inout) :: f_red(:,:,:,:,:)
+  real(dp) :: fl(5371,75,1,1,75)
+  real(dp),intent(in):: yrange(75), rrange(64),trange(75),srange(75)
+  integer :: yy,ss,rr,tt
   character(len=100)         :: path
   character(len=10)       :: tmp1,tmp2
-
-  open(unit=90,file="/c/pia/qse_inject.dat",status='replace',form='unformatted')
-  write(90) trange,rrange,yrange, srange
-  do rr = 1, 64
+  allocate (f_red(21,75,62,64,75))
+  do rr = 1,64
     do tt = 1,62
       write(tmp1,'(A1,i0)') 'r',rr-1
       write(tmp2,'(A2,i0)') '/t',tt
       print*, tmp1, tmp2
       path = "/c/pia/output/"//trim(tmp1)//trim(tmp2)//"/QSE_table.jld"
       call data_qse(fl,path)
-      f_red = fl((/1,2,3,5,6,7,8,31,84,145,215,292,376,465,560,659,661,763,518,769/),1:75,1,1,1:75)
-        do i = 2,75
-          do j = 1,75
-            write(90) tt,rr,i, j,f_red(:,i,j)/sum(f_red(:,i,j))
+      f_red(1:20,1:75,tt,rr,1:75) = fl((/1,2,3,5,6,7,8,31,84,145,215,292,376,465,560,659,661,763,518,769/),1:75,1,1,1:75)
+      f_red(21,1:75,tt,rr,1:75) = 0.0
+        do yy = 1,75
+          do ss = 1,75
+            f_red(:,yy,tt,rr,ss) = f_red(:,yy,tt,rr,ss) / sum(f_red(:,yy,tt,rr,ss))
           end do
         end do
     end do
-    print*,"*** path ***", path
+    print*, path
   end do
+  print*, "saving table..."
+  open(unit=90,file="/c/pia/qse_inject.dat",status='replace',form='unformatted')
+  write(90) trange,rrange,yrange, srange
+  write(90) f_red
   close(90)
+  print*, "saving complete!"
 end subroutine inject_to_file
 
 subroutine interpolate4D(rho,tem,ye,cl,index_part,x_inter)
@@ -236,22 +225,23 @@ subroutine interpolate4D(rho,tem,ye,cl,index_part,x_inter)
   !stored in x_inter. Therefore the return value x_inter has
   ! length 5371.
       implicit none
-      real(kind=8), intent(in)  :: rho,tem,ye,cl
+      real(dp), intent(in)  :: rho,tem,ye,cl
       integer, intent(in)       :: index_part
-      real(kind=8), intent(out) :: x_inter(5371)
-      real(kind=8)              :: yrange(75), rrange(64),trange(75),srange(75)
-      real(kind=8)              :: fl11(5371,75,1,1,75)
-      real(kind=8)              :: fl12(5371,75,1,1,75)
-      real(kind=8)              :: fl21(5371,75,1,1,75)
-      real(kind=8)              :: fl22(5371,75,1,1,75)
-      real(kind=8)              :: f_red(20,75,75)
-      real(kind=8)              :: mass = 0., mass1 = 0.
+      real(dp), intent(out) :: x_inter(5371)
+      real(dp)              :: yrange(75), rrange(64),trange(75),srange(75)
+!      real(dp)              :: fl11(5371,75,1,1,75)
+!      real(dp)              :: fl12(5371,75,1,1,75)
+!      real(dp)              :: fl21(5371,75,1,1,75)
+!      real(dp)              :: fl22(5371,75,1,1,75)
+      !real(dp)              :: f_red(20,75,62,64,75)
+      real(dp), allocatable :: f_red(:,:,:,:,:)
+      real(dp)              :: mass = 0., mass1 = 0.
       integer                   :: i_r,i_t,i_ye,i_cl, j
-      real(kind=8)              :: x0000,x1111,x1000,x0100,&
+      real(dp)              :: x0000,x1111,x1000,x0100,&
                                    x0010,x0001,x1100,x0011,&
                                    x1010,x0101,x0110,x1001,&
                                    x1110,x1101,x1011,x0111
-      real(kind=8)              :: w10,w20,w30,w40,&
+      real(dp)              :: w10,w20,w30,w40,&
                                    w11,w21,w31,w41,&
                                    drho,dcl,dtem,dye
       character(len=60)         :: path1,path2,path3,path4,tmp1,tmp2
@@ -264,15 +254,10 @@ subroutine interpolate4D(rho,tem,ye,cl,index_part,x_inter)
       dcl    = abs(srange(2)) - abs(srange(1))
       dtem   = trange(1) - trange(2)
       dye    = yrange(1) - yrange(2)
-      ! I could also call the parameter space direclty. But maybe not in this routine:
       !call range_params(yrange, "/yrange")
       !call range_params(srange, "/srange")
 
 
-      ! i_r = 1
-      ! i_t = 1
-      ! i_cl = 10
-      ! i_ye = 10
       call find_index(rho,rrange,i_r,tem,trange,i_t,ye,yrange,i_ye,cl,srange,i_cl)
 
       i_r = i_r - 1 ! directories for rho start at zero
@@ -292,21 +277,24 @@ subroutine interpolate4D(rho,tem,ye,cl,index_part,x_inter)
 
 
 
+      !allocate (f_red(21,75,62,64,75))
       call inject_to_file(f_red,rrange,trange,yrange,srange)
+      print*, "Does it sum to one?", sum(f_red(:,1,1,1,1))
+      deallocate(f_red)
       stop
-      call data_qse(fl11,path1)
-      call data_qse(fl12,path2)
-      call data_qse(fl21,path3)
-      call data_qse(fl22,path4)
-
-      call inject(fl11,f_red,rrange,trange,yrange,srange)
-      call inject(fl12,f_red,rrange,trange,yrange,srange)
-      call inject(fl21,f_red,rrange,trange,yrange,srange)
-      call inject(fl22,f_red,rrange,trange,yrange,srange)
-      stop
-
-
-
+!      call data_qse(fl11,path1)
+!      call data_qse(fl12,path2)
+!      call data_qse(fl21,path3)
+!      call data_qse(fl22,path4)
+!
+!      call inject(fl11,f_red,rrange,trange,yrange,srange)
+!      call inject(fl12,f_red,rrange,trange,yrange,srange)
+!      call inject(fl21,f_red,rrange,trange,yrange,srange)
+!      call inject(fl22,f_red,rrange,trange,yrange,srange)
+!      stop
+!
+!
+!
       ! ***** calculating weights *****
       ! https://en.wikipedia.org/wiki/Linear_interpolation
       w10 = (rrange(i_r) - rho) / drho
@@ -319,121 +307,121 @@ subroutine interpolate4D(rho,tem,ye,cl,index_part,x_inter)
       w31 = 1. - w30
       print*, w10,w20,w30,w40,w11,w21,w31,w41
 
-      ! ***** checking for corner cases *****
-      if ((i_ye == 1) .and. (i_cl == 1)) then
-        x0011 = fl11(j,i_ye,1,1,i_cl)
-        x0111 = fl12(j,i_ye,1,1,i_cl)
-        x1011 = fl21(j,i_ye,1,1,i_cl)
-        x1111 = fl22(j,i_ye,1,1,i_cl)
-        x_inter(j) = w10 * (x0011 * w20 + x0111 * w21) + &
-                     w11 * (x1011 * w20 + x1111 * w21)
-        return
-      else if (i_ye == 1) then
-        x0010 = fl11(j,i_ye,1,1,i_cl-1)
-        x0011 = fl11(j,i_ye,1,1,i_cl)
-        x0110 = fl12(j,i_ye,1,1,i_cl-1)
-        x0111 = fl12(j,i_ye,1,1,i_cl)
-        x1010 = fl21(j,i_ye,1,1,i_cl-1)
-        x1011 = fl21(j,i_ye,1,1,i_cl)
-        x1111 = fl22(j,i_ye,1,1,i_cl)
-        x1110 = fl22(j,i_ye,1,1,i_cl-1)
-        x_inter(j) = w10 * ( &
-                     x0010 * (w20 * w40) + &
-                     x0011 * (w20 * w41) + &
-                     x0110 * (w21 * w40) + &
-                     x0111 * (w21 * w41)) + &
-                     w11 * ( &
-                     x1010 * (w20 * w40) + &
-                     x1011 * (w20 * w41) + &
-                     x1111 * (w21 * w41) + &
-                     x1110 * (w21 * w40))
-        return
-      else if (i_cl == 1) then
-        x0001 = fl11(j,i_ye-1,1,1,i_cl)
-        x0011 = fl11(j,i_ye,1,1,i_cl)
-        x0101 = fl12(j,i_ye-1,1,1,i_cl)
-        x0111 = fl12(j,i_ye,1,1,i_cl)
-        x1001 = fl21(j,i_ye-1,1,1,i_cl)
-        x1011 = fl21(j,i_ye,1,1,i_cl)
-        x1111 = fl22(j,i_ye,1,1,i_cl)
-        x1101 = fl22(j,i_ye-1,1,1,i_cl)
-        x_inter(j) = w10 * ( &
-                     x0001 * (w20 * w30) + &
-                     x0011 * (w20 * w31) + &
-                     x0101 * (w21 * w30) + &
-                     x0111 * (w21 * w31)) + &
-                     w11 * ( &
-                     x1001 * (w20 * w30) + &
-                     x1011 * (w20 * w31) + &
-                     x1111 * (w21 * w31) + &
-                     x1101 * (w21 * w30))
-        return
-      end if
-
-      ! ***** looping over entire array *****
-      do j = 1, size(x_inter)
-            ! Julia: fl__ -> ye, t, rho, s
-            ! x____ -> rho,tem,ye,cl
-            x0000 = fl11(j,i_ye-1,1,1,i_cl-1)
-            x0010 = fl11(j,i_ye,1,1,i_cl-1)
-            x0001 = fl11(j,i_ye-1,1,1,i_cl)
-            x0011 = fl11(j,i_ye,1,1,i_cl)
-            x0100 = fl12(j,i_ye-1,1,1,i_cl-1)
-            x0101 = fl12(j,i_ye-1,1,1,i_cl)
-            x0110 = fl12(j,i_ye,1,1,i_cl-1)
-            x0111 = fl12(j,i_ye,1,1,i_cl)
-            x1000 = fl21(j,i_ye-1,1,1,i_cl-1)
-            x1010 = fl21(j,i_ye,1,1,i_cl-1)
-            x1001 = fl21(j,i_ye-1,1,1,i_cl)
-            x1011 = fl21(j,i_ye,1,1,i_cl)
-            x1111 = fl22(j,i_ye,1,1,i_cl)
-            x1100 = fl22(j,i_ye-1,1,1,i_cl-1)
-            x1110 = fl22(j,i_ye,1,1,i_cl-1)
-            x1101 = fl22(j,i_ye-1,1,1,i_cl)
-
-
-! =================================================
-! TODO: i_cl, i_cl not working because reverse: DONE!
-! TODO: path directories einpflegen: DONE!
-! TODO: Loop fuer alle elements adden : DONE!
-! TODO: fix binary search -> DONE
-! TODO: run on harddrive -> DONE
-! TODO: write tests -> DONE
-! TODO: write if clauses for edges -> DONE
-! TODO: one_zone.f95
-! =================================================
-
-
-      x_inter(j) = w10 * ( &
-                   x0000 * (w20 * w30 * w40) + &
-                   x0010 * (w20 * w31 * w40) + &
-                   x0001 * (w20 * w30 * w41) + &
-                   x0011 * (w20 * w31 * w41) + &
-                   x0100 * (w21 * w30 * w40) + &
-                   x0101 * (w21 * w30 * w41) + &
-                   x0110 * (w21 * w31 * w40) + &
-                   x0111 * (w21 * w31 * w41)) + &
-                   w11 * ( &
-                   x1000 * (w20 * w30 * w40) + &
-                   x1010 * (w20 * w31 * w40) + &
-                   x1001 * (w20 * w30 * w41) + &
-                   x1011 * (w20 * w31 * w41) + &
-                   x1111 * (w21 * w31 * w41) + &
-                   x1100 * (w21 * w30 * w40) + &
-                   x1110 * (w21 * w31 * w40) + &
-                   x1101 * (w21 * w30 * w41))
-            if (x_inter(j) > 1.e-6_dp) then
-              print*, 100._dp*abs(1.0-x1111/x_inter(j)),x1111,x_inter(j)
-            end if
-        if (x_inter(j) .ne. x_inter(j)) then
-          x_inter(j) = 0
-        else
-          mass = mass + x_inter(j)
-          mass1 = mass1 + x1111
-        endif
-      end do
-        print*,"--------------", mass, mass1, abs(1._dp-mass/mass1)
-
+!      ! ***** checking for corner cases *****
+!      if ((i_ye == 1) .and. (i_cl == 1)) then
+!        x0011 = fl11(j,i_ye,1,1,i_cl)
+!        x0111 = fl12(j,i_ye,1,1,i_cl)
+!        x1011 = fl21(j,i_ye,1,1,i_cl)
+!        x1111 = fl22(j,i_ye,1,1,i_cl)
+!        x_inter(j) = w10 * (x0011 * w20 + x0111 * w21) + &
+!                     w11 * (x1011 * w20 + x1111 * w21)
+!        return
+!      else if (i_ye == 1) then
+!        x0010 = fl11(j,i_ye,1,1,i_cl-1)
+!        x0011 = fl11(j,i_ye,1,1,i_cl)
+!        x0110 = fl12(j,i_ye,1,1,i_cl-1)
+!        x0111 = fl12(j,i_ye,1,1,i_cl)
+!        x1010 = fl21(j,i_ye,1,1,i_cl-1)
+!        x1011 = fl21(j,i_ye,1,1,i_cl)
+!        x1111 = fl22(j,i_ye,1,1,i_cl)
+!        x1110 = fl22(j,i_ye,1,1,i_cl-1)
+!        x_inter(j) = w10 * ( &
+!                     x0010 * (w20 * w40) + &
+!                     x0011 * (w20 * w41) + &
+!                     x0110 * (w21 * w40) + &
+!                     x0111 * (w21 * w41)) + &
+!                     w11 * ( &
+!                     x1010 * (w20 * w40) + &
+!                     x1011 * (w20 * w41) + &
+!                     x1111 * (w21 * w41) + &
+!                     x1110 * (w21 * w40))
+!        return
+!      else if (i_cl == 1) then
+!        x0001 = fl11(j,i_ye-1,1,1,i_cl)
+!        x0011 = fl11(j,i_ye,1,1,i_cl)
+!        x0101 = fl12(j,i_ye-1,1,1,i_cl)
+!        x0111 = fl12(j,i_ye,1,1,i_cl)
+!        x1001 = fl21(j,i_ye-1,1,1,i_cl)
+!        x1011 = fl21(j,i_ye,1,1,i_cl)
+!        x1111 = fl22(j,i_ye,1,1,i_cl)
+!        x1101 = fl22(j,i_ye-1,1,1,i_cl)
+!        x_inter(j) = w10 * ( &
+!                     x0001 * (w20 * w30) + &
+!                     x0011 * (w20 * w31) + &
+!                     x0101 * (w21 * w30) + &
+!                     x0111 * (w21 * w31)) + &
+!                     w11 * ( &
+!                     x1001 * (w20 * w30) + &
+!                     x1011 * (w20 * w31) + &
+!                     x1111 * (w21 * w31) + &
+!                     x1101 * (w21 * w30))
+!        return
+!      end if
+!
+!      ! ***** looping over entire array *****
+!      do j = 1, size(x_inter)
+!            ! Julia: fl__ -> ye, t, rho, s
+!            ! x____ -> rho,tem,ye,cl
+!            x0000 = fl11(j,i_ye-1,1,1,i_cl-1)
+!            x0010 = fl11(j,i_ye,1,1,i_cl-1)
+!            x0001 = fl11(j,i_ye-1,1,1,i_cl)
+!            x0011 = fl11(j,i_ye,1,1,i_cl)
+!            x0100 = fl12(j,i_ye-1,1,1,i_cl-1)
+!            x0101 = fl12(j,i_ye-1,1,1,i_cl)
+!            x0110 = fl12(j,i_ye,1,1,i_cl-1)
+!            x0111 = fl12(j,i_ye,1,1,i_cl)
+!            x1000 = fl21(j,i_ye-1,1,1,i_cl-1)
+!            x1010 = fl21(j,i_ye,1,1,i_cl-1)
+!            x1001 = fl21(j,i_ye-1,1,1,i_cl)
+!            x1011 = fl21(j,i_ye,1,1,i_cl)
+!            x1111 = fl22(j,i_ye,1,1,i_cl)
+!            x1100 = fl22(j,i_ye-1,1,1,i_cl-1)
+!            x1110 = fl22(j,i_ye,1,1,i_cl-1)
+!            x1101 = fl22(j,i_ye-1,1,1,i_cl)
+!
+!
+!! =================================================
+!! TODO: i_cl, i_cl not working because reverse: DONE!
+!! TODO: path directories einpflegen: DONE!
+!! TODO: Loop fuer alle elements adden : DONE!
+!! TODO: fix binary search -> DONE
+!! TODO: run on harddrive -> DONE
+!! TODO: write tests -> DONE
+!! TODO: write if clauses for edges -> DONE
+!! TODO: one_zone.f95
+!! =================================================
+!
+!
+!      x_inter(j) = w10 * ( &
+!                   x0000 * (w20 * w30 * w40) + &
+!                   x0010 * (w20 * w31 * w40) + &
+!                   x0001 * (w20 * w30 * w41) + &
+!                   x0011 * (w20 * w31 * w41) + &
+!                   x0100 * (w21 * w30 * w40) + &
+!                   x0101 * (w21 * w30 * w41) + &
+!                   x0110 * (w21 * w31 * w40) + &
+!                   x0111 * (w21 * w31 * w41)) + &
+!                   w11 * ( &
+!                   x1000 * (w20 * w30 * w40) + &
+!                   x1010 * (w20 * w31 * w40) + &
+!                   x1001 * (w20 * w30 * w41) + &
+!                   x1011 * (w20 * w31 * w41) + &
+!                   x1111 * (w21 * w31 * w41) + &
+!                   x1100 * (w21 * w30 * w40) + &
+!                   x1110 * (w21 * w31 * w40) + &
+!                   x1101 * (w21 * w30 * w41))
+!            if (x_inter(j) > 1.e-6_dp) then
+!              print*, 100._dp*abs(1.0-x1111/x_inter(j)),x1111,x_inter(j)
+!            end if
+!        if (x_inter(j) .ne. x_inter(j)) then
+!          x_inter(j) = 0
+!        else
+!          mass = mass + x_inter(j)
+!          mass1 = mass1 + x1111
+!        endif
+!      end do
+!        print*,"--------------", mass, mass1, abs(1._dp-mass/mass1)
+!
       end subroutine interpolate4D
 
 
