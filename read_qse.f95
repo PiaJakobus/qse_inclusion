@@ -331,7 +331,6 @@ subroutine interpolate4D(rho,tem,ye,cl,index_part,x_inter)
         print*,"ERROR: mass not summing to 1", mass
         stop 
       end if 
-      stop 
       end subroutine interpolate4D
 
 

@@ -4,10 +4,11 @@ program main
       include 'implno.dek'
       include 'vector_eos.dek'
 
-      integer, parameter :: ionmax = 20 
+      integer, parameter :: ionmax = 3, nromax = 1
       integer            :: i,j
 
       real(dp)   :: temp, den, ye, x_cl, p
+      real(dp)   :: pres, ener
       real(dp)   :: eden_0, eden_int, enbyrst,&
                         eden_int_old, delta_eden_int
       real(dp)   :: abar,zbar  
@@ -22,7 +23,7 @@ program main
       eden_int_old   = eden_int
 
       call qse(den,temp,ye,x,x_cl,enbyrst)
-stop
+!stop
 
       ! ionmax  = number of isotopes in the network
       ! xmass   = mass fraction of isotope i
@@ -42,10 +43,11 @@ stop
       ! set the input vector. pipeline is only 1 element long
       temp_row(1) = 1.e8 ; den_row(1)  = 1.e6 ; abar_row(1) = abar ; zbar_row(1) = zbar
       jlo_eos = 1 ; jhi_eos = 1
+      print*, "****", etot_row,ptot_row
+      call eosfxt
+      print*, "****", etot_row,ptot_row
 
-      !call eosfxt
-
-      !call pretty_eos_out('eosfxt:  ')
+      call pretty_eos_out('eosfxt:  ')
 
       ! what if T falls behind T_qse in iteration?
       ! kepdata.py in python/source (kepler) approx21

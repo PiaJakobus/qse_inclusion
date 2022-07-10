@@ -6,5 +6,6 @@ a.out
 *.dek
 *.md
 *.swp
+*.swo
 one_zone.f95
 
