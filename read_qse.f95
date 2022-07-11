@@ -1,7 +1,6 @@
 module read_qse
 use hdf5
 use hdf5_utils
-!use iso_fortran_env, only: dp => real64
 use linspace_mod
 
 
@@ -14,7 +13,7 @@ subroutine data_qse(y,filename)
   ! add path to filename
   implicit none
 
-  real(dp), intent(inout)      :: y(75,1,1,75,5371)
+  real(dp), intent(inout)          :: y(75,1,1,75,5371)
   character(len=60), intent(in)    :: filename
   integer, parameter               :: ydims = 5
   integer(HID_T)                   :: yshape(ydims)
@@ -57,13 +56,13 @@ subroutine range_params(yrange, dataname_y)
   ! This subroutine reads params.jld
   ! add path to filename
   ! can be called for srange as well
-  real(dp), intent(inout) :: yrange(75)
+  real(dp), intent(inout)      :: yrange(75)
   character(len=7), intent(in) :: dataname_y
-  integer, parameter          :: ydims = 1
-  integer(HID_T)              :: yshape(ydims)
-  integer                     :: errorflag
-  integer(HID_T)              :: file_id,group_id,root_id, d_id
-  character(len=60)           :: filename, rootname
+  integer, parameter           :: ydims = 1
+  integer(HID_T)               :: yshape(ydims)
+  integer                      :: errorflag
+  integer(HID_T)               :: file_id,group_id,root_id, d_id
+  character(len=60)            :: filename, rootname
 
   yshape = shape(yrange)
   filename = "params.jld"
@@ -95,19 +94,19 @@ subroutine range_params(yrange, dataname_y)
   end if
 end subroutine range_params
 
-subroutine qse(rho,temp,ye,x,x_cl,enbyrst)
+subroutine qse(x,rho,temp,ye,x_cl)
       implicit none
-      real(dp), intent(in)    :: rho, temp, ye, x_cl,enbyrst
-      real(dp), intent(inout) :: x(5371)
-      real(dp)                :: y(5371,75,1,1,75)
-      character(len=60) :: path
+      real(dp), intent(in)    :: rho, temp, ye, x_cl
+      real(dp), intent(inout) :: x(21)
+      character(len=60)       :: path
       ! r2/t2: 1.2857142857142857e8 / 4.972972972972973e9
       ! r2/t3: 1.2857142857142857e8 / 4.945945945945947e9
       ! r3/t2: 1.4285714285714287e8 / 4.972972972972973e9
       ! r3/t3: 1.4285714285714287e8 / 4.945945945945947e9
 
+      call interpolate4D(rho,temp,ye,x_cl,x)
       !call interpolate4D(4.e8_dp,3.1e9_dp,0.49_dp,-0.6_dp,2,x)
-      call interpolate4D(1.3e8_dp,4.95e9_dp,0.471_dp,-1.6_dp,2,x)
+      !call interpolate4D(1.3e8_dp,4.95e9_dp,0.471_dp,-1.6_dp,x)
       !call interpolate4D(1.e8_dp,5.e9_dp,0.5_dp,-1.5_dp,2,x)
       !call interpolate4D(1.e9_dp,3.e9_dp,0.47_dp,-4._dp,2,x)
 end subroutine qse
@@ -116,10 +115,10 @@ end subroutine qse
 
 subroutine find_index(rho,rrange,i_r,tem,trange,i_t,ye,yrange,i_ye,cl,srange,i_cl)
   implicit none
-  real(dp), intent(in) :: yrange(75), rrange(64),trange(75),srange(75)
-  real(dp), intent(in) :: rho,tem,ye,cl
-  real(dp)           :: drho,dcl,dtem,dye
   integer, intent(inout) :: i_r,i_t,i_ye,i_cl
+  real(dp), intent(in)   :: yrange(75), rrange(64),trange(75),srange(75)
+  real(dp), intent(in)   :: rho,tem,ye,cl
+  real(dp)               :: drho,dcl,dtem,dye
   drho   = rrange(2) - rrange(1)
   dcl    = abs(srange(2)) - abs(srange(1))
   dtem   = trange(1) - trange(2)
@@ -183,11 +182,11 @@ end subroutine find_index
 subroutine inject_to_file(f_red,rrange,trange,yrange,srange)
   ! Julia: yy,tt,rr,ss
   real(dp), allocatable, intent(inout) :: f_red(:,:,:,:,:)
-  real(dp) :: fl(5371,75,1,1,75)
-  real(dp),intent(in):: yrange(75), rrange(64),trange(75),srange(75)
-  integer :: yy,ss,rr,tt
-  character(len=100)         :: path
-  character(len=10)       :: tmp1,tmp2
+  real(dp),intent(in) :: yrange(75), rrange(64),trange(75),srange(75)
+  real(dp)            :: fl(5371,75,1,1,75)
+  integer             :: yy,ss,rr,tt
+  character(len=100)  :: path
+  character(len=10)   :: tmp1,tmp2
   allocate (f_red(21,75,62,64,75))
   do rr = 1,64
     do tt = 1,62
@@ -214,31 +213,21 @@ subroutine inject_to_file(f_red,rrange,trange,yrange,srange)
   print*, "saving complete!"
 end subroutine inject_to_file
 
-subroutine interpolate4D(rho,tem,ye,cl,index_part,x_inter)
-  ! f11: rho(i_r),T(i_t)
-  ! f12: rho(i_r), T(i_t+1)
-  ! f21: rho(i_r+1),T(i_t)
-  ! f22: rho(i_r+1),T(i_t+1)
-  !
-  ! This subroutine interpolates a 4 dimensional table to a single value
-  ! which is the abundance of a particle i. Subroutine loops over particles
-  !stored in x_inter. Therefore the return value x_inter has
-  ! length 5371.
+subroutine interpolate4D(rho,tem,ye,cl,x_inter)
       implicit none
       real(dp), intent(in)  :: rho,tem,ye,cl
-      integer, intent(in)   :: index_part
       real(dp), intent(out) :: x_inter(21)
       real(dp)              :: yrange(75), rrange(64),trange(75),srange(75)
-     real(dp), allocatable  :: f_red(:,:,:,:,:)
+      real(dp), allocatable :: f_red(:,:,:,:,:)
       real(dp)              :: mass = 0., mass1 = 0.
       integer               :: i_r,i_t,i_ye,i_cl, j
       real(dp)              :: x0000,x1111,x1000,x0100,&
-                                   x0010,x0001,x1100,x0011,&
-                                   x1010,x0101,x0110,x1001,&
-                                   x1110,x1101,x1011,x0111
+                               x0010,x0001,x1100,x0011,&
+                               x1010,x0101,x0110,x1001,&
+                               x1110,x1101,x1011,x0111
       real(dp)              :: w10,w20,w30,w40,&
-                                   w11,w21,w31,w41,&
-                                   drho,dcl,dtem,dye
+                               w11,w21,w31,w41,&
+                               drho,dcl,dtem,dye
       character(len=60)     :: path1,path2,path3,path4,tmp1,tmp2
 
       rrange = linspace(1e8_dp,1e9_dp,64)
@@ -263,7 +252,7 @@ subroutine interpolate4D(rho,tem,ye,cl,index_part,x_inter)
       read(95) trange,rrange,yrange,srange
       read(95) f_red
       close(95) 
-      print*, "Does it sum to one?", sum(f_red(:,1,1,1,1))
+      !print*, "Does it sum to one?", sum(f_red(:,1,1,1,1))
 
       ! ***** calculating weights *****
       ! https://en.wikipedia.org/wiki/Linear_interpolation
@@ -275,10 +264,9 @@ subroutine interpolate4D(rho,tem,ye,cl,index_part,x_inter)
       w21 = 1. - w20
       w30 = (- yrange(i_ye) + ye) / dye
       w31 = 1. - w30
-      print*, w10,w20,w30,w40,w11,w21,w31,w41
 
-
-!      ! ***** looping over entire array *****
+      mass = 0.0_dp
+      ! ***** looping over entire array *****
       do j = 1, size(x_inter)
             ! Julia: fl__ -> ye, t, rho, s
             ! x____ -> rho,tem,ye,cl
