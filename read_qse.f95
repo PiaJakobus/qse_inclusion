@@ -105,6 +105,7 @@ subroutine qse(x,rho,temp,ye,x_cl)
       ! r3/t3: 1.4285714285714287e8 / 4.945945945945947e9
 
       call interpolate4D(rho,temp,ye,x_cl,x)
+      !call interpolate4D(rho,2.1e9_dp,ye,x_cl,x)
       !call interpolate4D(4.e8_dp,3.1e9_dp,0.49_dp,-0.6_dp,2,x)
       !call interpolate4D(1.3e8_dp,4.95e9_dp,0.471_dp,-1.6_dp,x)
       !call interpolate4D(1.e8_dp,5.e9_dp,0.5_dp,-1.5_dp,2,x)
@@ -128,7 +129,7 @@ subroutine find_index(rho,rrange,i_r,tem,trange,i_t,ye,yrange,i_ye,cl,srange,i_c
   i_cl = floor((abs(cl) -  abs(srange(1))) / dcl + 1.) + 1
   i_t =  floor((trange(1) - tem) / dtem + 1.) + 1
   i_ye = floor((yrange(1) - ye) / dye + 1.) + 1
-
+print*, "this is the temp range ", trange(1), trange(62), trange(75) 
   if (rho == rrange(1)) then
       i_r = 1
   end if
@@ -166,11 +167,11 @@ subroutine find_index(rho,rrange,i_r,tem,trange,i_t,ye,yrange,i_ye,cl,srange,i_c
 !  print*, "i_cl", i_cl
 !  print*,'---'
 !
-!  print*, "trange(i_t-1)",trange(i_t-1)
-!  print*, "trange(i_t)",trange(i_t)
-!  print*, "tem",tem
-!  print*, "i_t", i_t
-!  print*,'---'
+  print*, "trange(i_t-1)",trange(i_t-1)
+  print*, "trange(i_t)",trange(i_t)
+  print*, "tem",tem
+  print*, "i_t", i_t
+  print*,'---'
 !
 !  print*, "yrange(i_ye-1)",yrange(i_ye-1)
 !  print*, "yrange(i_ye)",yrange(i_ye)
@@ -195,18 +196,18 @@ subroutine inject_to_file(f_red,rrange,trange,yrange,srange)
       print*, tmp1, tmp2
       path = "/c/pia/output/"//trim(tmp1)//trim(tmp2)//"/QSE_table.jld"
       call data_qse(fl,path)
-      f_red(1:20,1:75,tt,rr,1:75) = fl((/1,2,3,5,6,7,8,31,84,145,215,292,376,465,560,659,661,763,518,769/),1:75,1,1,1:75)
+      f_red(1:20,1:75,tt,rr,1:75) = fl((/1,2,3,5,6,7,8,31,84,145,215,292,376,465,560,568,659,661,763,663/),1:75,1,1,1:75)
       f_red(21,1:75,tt,rr,1:75) = 0.0
         do yy = 1,75
           do ss = 1,75
-            f_red(:,yy,tt,rr,ss) = f_red(:,yy,tt,rr,ss) / sum(f_red(:,yy,tt,rr,ss))
+            f_red(:,yy,tt,rr,ss) = f_red(:,yy,tt,rr,ss) * sum(f_red(:,yy,tt,rr,ss))
           end do
         end do
     end do
     print*, path
   end do
   print*, "saving table..."
-  open(unit=90,file="/c/pia/qse_inject.dat",status='replace',form='unformatted')
+  open(unit=90,file="/c/pia/qse_inject_2.dat",status='replace',form='unformatted')
   write(90) trange,rrange,yrange, srange
   write(90) f_red
   close(90)
@@ -215,17 +216,17 @@ end subroutine inject_to_file
 
 subroutine interpolate4D(rho,tem,ye,cl,x_inter)
       implicit none
-      real(dp), intent(in)  :: rho,tem,ye,cl
-      real(dp), intent(out) :: x_inter(21)
-      real(dp)              :: yrange(75), rrange(64),trange(75),srange(75)
-      real(dp), allocatable :: f_red(:,:,:,:,:)
-      real(dp)              :: mass = 0., mass1 = 0.
+      real(8), intent(in)  :: rho,tem,ye,cl
+      real(8), intent(out) :: x_inter(21)
+      real(8)              :: yrange(75), rrange(64),trange(75),srange(75)
+      real(8), allocatable :: f_red(:,:,:,:,:)
+      real(8)              :: mass = 0., mass1 = 0.
       integer               :: i_r,i_t,i_ye,i_cl, j
-      real(dp)              :: x0000,x1111,x1000,x0100,&
+      real(8)              :: x0000,x1111,x1000,x0100,&
                                x0010,x0001,x1100,x0011,&
                                x1010,x0101,x0110,x1001,&
                                x1110,x1101,x1011,x0111
-      real(dp)              :: w10,w20,w30,w40,&
+      real(8)              :: w10,w20,w30,w40,&
                                w11,w21,w31,w41,&
                                drho,dcl,dtem,dye
       character(len=60)     :: path1,path2,path3,path4,tmp1,tmp2
@@ -245,14 +246,24 @@ subroutine interpolate4D(rho,tem,ye,cl,x_inter)
       call find_index(rho,rrange,i_r,tem,trange,i_t,ye,yrange,i_ye,cl,srange,i_cl)
 
 
+      !print*, "INJECTING TO FILE ..."
       !call inject_to_file(f_red,rrange,trange,yrange,srange)
+      !print*, "INJECT TO FILE DONE"
 
       allocate (f_red(21,75,62,64,75))
-      open(unit=95,file="/c/pia/qse_inject.dat",form='unformatted')
+      open(unit=95,file="/c/pia/qse_inject_2.dat",form='unformatted')
       read(95) trange,rrange,yrange,srange
       read(95) f_red
       close(95) 
-      !print*, "Does it sum to one?", sum(f_red(:,1,1,1,1))
+      print*, "Does it sum to one?", sum(f_red(:,i_ye,i_t,i_r,i_cl))
+      print*, "Shape of f_red", shape(f_red)
+      print*, "first entry f_red ", f_red(:,i_ye,i_t,i_r,i_cl)
+      print*, "========================"
+      print*, "========================"
+      print*, trange(1), rrange(1), yrange(1), srange(1)
+      print*, trange(63), rrange(size(rrange)), yrange(size(yrange)), srange(size(srange))
+      print*, "========================"
+      print*, "========================"
 
       ! ***** calculating weights *****
       ! https://en.wikipedia.org/wiki/Linear_interpolation

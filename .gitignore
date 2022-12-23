@@ -10,4 +10,6 @@ a.out
 *.swn
 README
 one_zone.f95
-
+linspace.f95
+hdf5_utils.f95
+eosfxt.f90

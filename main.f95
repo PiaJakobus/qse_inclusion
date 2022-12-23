@@ -49,25 +49,25 @@ program main
       aion(20)  = 62.0 ; zion(20)  = 28.0
       aion(21)  = 14.0 ; zion(21)  = 7.0
 
-      call qse(xmass,den,temp,ye,x_cl)
-      abar   = 1.0/sum(xmass(1:ionmax)/aion(1:ionmax))
-      zbar   = abar * sum(xmass(1:ionmax) * zion(1:ionmax)/aion(1:ionmax))
      
       ! set the input vector. pipeline is only 1 element long
-      temp_row(1) = temp ; den_row(1)  = den ; abar_row(1) = abar ; zbar_row(1) = zbar
+      temp_row(1) = temp ; den_row(1)  = den ; abar_row(1) = 6 ; zbar_row(1) = 6
       jlo_eos = 1 ; jhi_eos = 1 ; ye_row(1) = ye 
-
-
+            
       !call pretty_eos_out('eosfxt:  ')
-      call eosfxt
-      print*, "ETOT_ROW: ",etot_row(1)
-      eden_0 = etot_row(1) + 1e5_dp
+      
+      eden_0 = 1e17_dp 
+      etot_row(1) = 5e16_dp 
+
+
+
+      ! TODO: recalculate x_cl
       ! --------- check via eden ------
+
+      !call qse(xmass_row(:,1),den_row(1),temp_row(1),ye_row(1),x_cl)
       j = 0
-! TODO: recalculate x_cl
       do while ((delta_eden_int > 0.01) .and. (j < 10))
             call eosfxt
-            eden_int_old = etot_row(1) 
             call qse(xmass_row(:,1),den_row(1),temp_row(1),ye_row(1),x_cl)
             abar   = 1.0/sum(xmass_row(1:ionmax,1)/aion(1:ionmax))
             zbar   = abar * sum(xmass_row(1:ionmax,1) * zion(1:ionmax)/aion(1:ionmax))
@@ -76,16 +76,13 @@ program main
               enbyrst = enbyrst + ((zion(i) * mp + (aion(i) - zion(i)) * mn) &
                         / (amu * aion(i))) * den_row(1) * xmass_row(i,1) 
             end do 
-            enbyrst = 1.66e-24_dp * (enbyrst + den_row(1) / 1.66e-24_dp * &
-                      (-mn + enullm + ye_row(1) * me))
+            enbyrst = 1.66e-24_dp * enbyrst + den_row(1) * (-mn + enullm + ye_row(1) * me)
             eden_int = eden_0 - enbyrst
-            !print*, eden_int 
-            !print*, eden_int
-            delta_eden_int = abs(eden_int - eden_int_old)
+            delta_eden_int = abs(etot_row(1) - eden_int)
             etot_row(1) = eden_int 
             j = j + 1
-            print*, enbyrst,delta_eden_int, den_row(1),&
-                    temp_row(1),ye_row(1)
+!            print*, enbyrst,delta_eden_int, etot_row(1), den_row(1),&
+!                    temp_row(1),ye_row(1)
             enbyrst = 0.0_dp
       enddo
 
